@@ -1,6 +1,6 @@
 use crate::entity::Name;
 use crate::game::Game;
-use feather_core::text::{Color, TextRoot, Translate};
+use feather_core::text::{Color, TextComponent, TextRoot, Translate};
 use fecs::{Entity, World};
 
 /// Event triggered when a chat message is sent out
@@ -30,7 +30,8 @@ pub fn on_player_join_broadcast_join_message(game: &mut Game, world: &mut World,
     let message: String = {
         let name = world.get::<Name>(player);
         TextRoot::from(
-            Translate::MultiplayerPlayerJoined * vec![name.0.to_string()] * Color::Yellow,
+            TextComponent::from(Translate::MultiplayerPlayerJoined * vec![name.0.to_string()])
+                * Color::Yellow,
         )
         .into()
     };

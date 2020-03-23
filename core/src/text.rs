@@ -25,7 +25,7 @@ pub enum Color {
 
 impl From<Color> for Text {
     fn from(color: Color) -> Self {
-        Text::empty().color(color)
+        TextComponent::default().color(color).into()
     }
 }
 
@@ -41,7 +41,7 @@ pub enum Style {
 
 impl From<Style> for Text {
     fn from(style: Style) -> Self {
-        Text::empty().style(style)
+        TextComponent::default().style(style).into()
     }
 }
 
@@ -399,10 +399,6 @@ impl Default for TextComponent {
     }
 }
 
-pub trait IntoTextComponent {
-    fn into_component(self) -> TextComponent;
-}
-
 impl TextComponent {
     pub fn empty() -> TextComponent {
         TextComponent::from("")
@@ -511,26 +507,16 @@ pub trait TextComponentBuilder {
     fn reset(self, reset: Reset) -> Self;
 }
 
-impl IntoTextComponent for TextComponent {
-    fn into_component(self) -> TextComponent {
-        self
-    }
-}
-
-impl<T> TextComponentBuilder for T
-where
-    T: IntoTextComponent + From<TextComponent>,
-{
-    fn set_style(self, style: Style, value: Option<bool>) -> Self {
-        let mut component = self.into_component();
+impl TextComponentBuilder for TextComponent {
+    fn set_style(mut self, style: Style, value: Option<bool>) -> Self {
         match style {
-            Style::Bold => component.bold = value,
-            Style::Italic => component.italic = value,
-            Style::Obfuscated => component.obfuscated = value,
-            Style::Strikethrough => component.strikethrough = value,
-            Style::Underlined => component.underlined = value,
+            Style::Bold => self.bold = value,
+            Style::Italic => self.italic = value,
+            Style::Obfuscated => self.obfuscated = value,
+            Style::Strikethrough => self.strikethrough = value,
+            Style::Underlined => self.underlined = value,
         };
-        component.into()
+        self
     }
 
     fn style(self, style: Style) -> Self {
@@ -605,20 +591,18 @@ where
         self.style(Style::Underlined)
     }
 
-    fn reset_style_all(self) -> Self {
-        let mut component = self.into_component();
-        component.bold = None;
-        component.italic = None;
-        component.obfuscated = None;
-        component.strikethrough = None;
-        component.underlined = None;
-        component.into()
+    fn reset_style_all(mut self) -> Self {
+        self.bold = None;
+        self.italic = None;
+        self.obfuscated = None;
+        self.strikethrough = None;
+        self.underlined = None;
+        self
     }
 
-    fn color(self, color: Color) -> Self {
-        let mut component = self.into_component();
-        component.color = Some(color);
-        component.into()
+    fn color(mut self, color: Color) -> Self {
+        self.color = Some(color);
+        self
     }
 
     fn dark_red(self) -> Self {
@@ -685,28 +669,24 @@ where
         self.color(Color::Black)
     }
 
-    fn reset_color(self) -> Self {
-        let mut component = self.into_component();
-        component.color = None;
-        component.into()
+    fn reset_color(mut self) -> Self {
+        self.color = None;
+        self
     }
 
-    fn insertion<A: Into<Cow<'static, str>>>(self, insertion: A) -> Self {
-        let mut component = self.into_component();
-        component.insertion = Some(insertion.into());
-        component.into()
+    fn insertion<A: Into<Cow<'static, str>>>(mut self, insertion: A) -> Self {
+        self.insertion = Some(insertion.into());
+        self
     }
 
-    fn reset_insertion(self) -> Self {
-        let mut component = self.into_component();
-        component.insertion = None;
-        component.into()
+    fn reset_insertion(mut self) -> Self {
+        self.insertion = None;
+        self
     }
 
-    fn on_click(self, click: Click) -> Self {
-        let mut component = self.into_component();
-        component.click = Some(click);
-        component.into()
+    fn on_click(mut self, click: Click) -> Self {
+        self.click = Some(click);
+        self
     }
 
     fn on_click_change_page(self, page: i32) -> Self {
@@ -732,16 +712,14 @@ where
         self.on_click(Click::SuggestCommand(command.into()))
     }
 
-    fn reset_on_click(self) -> Self {
-        let mut component = self.into_component();
-        component.click = None;
-        component.into()
+    fn reset_on_click(mut self) -> Self {
+        self.click = None;
+        self
     }
 
-    fn on_hover(self, hover: Hover) -> Self {
-        let mut component = self.into_component();
-        component.hover = Some(hover);
-        component.into()
+    fn on_hover(mut self, hover: Hover) -> Self {
+        self.hover = Some(hover);
+        self
     }
 
     fn on_hover_show_entity<A: Into<Entity>>(self, entity: A) -> Self {
@@ -756,50 +734,45 @@ where
         self.on_hover(Hover::ShowText(Box::new(text.into())))
     }
 
-    fn reset_on_hover(self) -> Self {
-        let mut component = self.into_component();
-        component.hover = None;
-        component.into()
+    fn reset_on_hover(mut self) -> Self {
+        self.hover = None;
+        self
     }
 
-    fn extra<A>(self, extra: A) -> Self
+    fn extra<A>(mut self, extra: A) -> Self
     where
         A: IntoIterator,
         A::Item: Into<Text>,
     {
-        let mut component = self.into_component();
-        component.extra = Some(extra.into_iter().map(|e| e.into()).collect());
-        component.into()
+        self.extra = Some(extra.into_iter().map(|e| e.into()).collect());
+        self
     }
 
-    fn push_extra<A: Into<Text>>(self, extra: A) -> Self {
-        let mut component = self.into_component();
-        match component.extra {
+    fn push_extra<A: Into<Text>>(mut self, extra: A) -> Self {
+        match self.extra {
             Some(ref mut extras) => extras.push(extra.into()),
-            None => component.extra = Some(vec![extra.into()]),
+            None => self.extra = Some(vec![extra.into()]),
         };
-        component.into()
+        self
     }
 
-    fn reset_extra(self) -> Self {
-        let mut component = self.into_component();
-        component.extra = None;
-        component.into()
+    fn reset_extra(mut self) -> Self {
+        self.extra = None;
+        self
     }
 
-    fn reset_all(self) -> Self {
-        let mut component = self.into_component();
-        component.color = None;
-        component.bold = None;
-        component.italic = None;
-        component.underlined = None;
-        component.strikethrough = None;
-        component.obfuscated = None;
-        component.insertion = None;
-        component.click = None;
-        component.hover = None;
-        component.extra = None;
-        component.into()
+    fn reset_all(mut self) -> Self {
+        self.color = None;
+        self.bold = None;
+        self.italic = None;
+        self.underlined = None;
+        self.strikethrough = None;
+        self.obfuscated = None;
+        self.insertion = None;
+        self.click = None;
+        self.hover = None;
+        self.extra = None;
+        self
     }
 
     fn reset(self, reset: Reset) -> Self {
@@ -851,16 +824,6 @@ pub enum Text {
     String(Cow<'static, str>),
     Array(Vec<Text>),
     Component(Box<TextComponent>),
-}
-
-impl IntoTextComponent for Text {
-    fn into_component(self) -> TextComponent {
-        match self {
-            Text::Component(c) => *c,
-            Text::String(text) => TextComponent::from(text),
-            Text::Array(arr) => TextComponent::empty().extra(arr),
-        }
-    }
 }
 
 impl Text {
@@ -966,66 +929,49 @@ where
 {
     fn from(text: T) -> Self {
         match text.into() {
-            s @ Text::String(_) => TextRoot(s.into_component().into()),
+            s @ Text::String(_) => TextRoot(s),
             c @ Text::Component(_) => TextRoot(c),
             a @ Text::Array(_) => TextRoot(a),
         }
     }
 }
 
-impl IntoTextComponent for TextRoot {
-    fn into_component(self) -> TextComponent {
-        self.0.into_component()
+impl std::ops::Mul<Color> for TextComponent {
+    type Output = Self;
+    fn mul(self, rhs: Color) -> Self {
+        self.color(rhs)
     }
 }
 
-macro_rules! impl_operators {
-    ($ty:ident) => {
-        impl std::ops::Mul<Color> for $ty {
-            type Output = Self;
-            fn mul(self, rhs: Color) -> Self {
-                self.color(rhs)
-            }
-        }
-
-        impl std::ops::Mul<Style> for $ty {
-            type Output = Self;
-            fn mul(self, rhs: Style) -> Self {
-                self.style(rhs)
-            }
-        }
-
-        impl std::ops::Div<Style> for $ty {
-            type Output = Self;
-            fn div(self, rhs: Style) -> Self {
-                self.not_style(rhs)
-            }
-        }
-
-        impl std::ops::Div<Reset> for $ty {
-            type Output = Self;
-            fn div(self, rhs: Reset) -> Self {
-                self.reset(rhs)
-            }
-        }
-    };
-    ($($ty:ident),+) => {
-        $(
-            impl_operators!($ty);
-        )+
+impl std::ops::Mul<Style> for TextComponent {
+    type Output = Self;
+    fn mul(self, rhs: Style) -> Self {
+        self.style(rhs)
     }
 }
 
-impl_operators!(TextRoot, Text, TextComponent);
+impl std::ops::Div<Style> for TextComponent {
+    type Output = Self;
+    fn div(self, rhs: Style) -> Self {
+        self.not_style(rhs)
+    }
+}
+
+impl std::ops::Div<Reset> for TextComponent {
+    type Output = Self;
+    fn div(self, rhs: Reset) -> Self {
+        self.reset(rhs)
+    }
+}
 
 #[cfg(test)]
 mod tests {
-    use crate::text::{Color, Style, Text, TextRoot, Translate};
+    use crate::text::{Color, Style, Text, TextComponent, TextRoot, Translate};
     use std::error::Error;
 
     #[test]
     pub fn text_text_single() -> Result<(), Box<dyn Error>> {
-        let text_orignal: Text = Text::from("hello").into();
+        let text_orignal: Text = Text::from("hello");
 
         let text_json = serde_json::to_string(&text_orignal)?;
 
@@ -1053,7 +999,7 @@ mod tests {
 
     #[test]
     fn text_text_color() -> Result<(), Box<dyn Error>> {
-        let text_orignal: Text = (Text::from("hello world") * Color::DarkRed).into();
+        let text_orignal: Text = (TextComponent::from("hello world") * Color::DarkRed).into();
 
         let text_json = serde_json::to_string(&text_orignal)?;
 
@@ -1067,9 +1013,10 @@ mod tests {
 
     #[test]
     fn text_hello_space_world() -> Result<(), Box<dyn Error>> {
-        let hello: Text = Text::from("hello") * Color::Red * Style::Italic * Style::Bold;
+        let hello: Text =
+            Text::from(TextComponent::from("hello") * Color::Red * Style::Italic * Style::Bold);
         let space: Text = Text::from(" ");
-        let world: Text = Text::from("world") * Color::Blue * Style::Bold;
+        let world: Text = Text::from(TextComponent::from("world") * Color::Blue * Style::Bold);
         let hello_space_world: Text = hello + space + world;
 
         let text_json = serde_json::to_string(&hello_space_world)?;
@@ -1084,8 +1031,10 @@ mod tests {
 
     #[test]
     fn text_translate() -> Result<(), Box<dyn Error>> {
-        let join =
-            Translate::from("multiplayer.player.joined") * vec!["The_Defman"] * Color::Yellow;
+        let join = Text::from(
+            TextComponent::from(Translate::from("multiplayer.player.joined") * vec!["The_Defman"])
+                * Color::Yellow,
+        );
 
         let text_json = serde_json::to_string(&join)?;
 
@@ -1094,7 +1043,10 @@ mod tests {
             r#"{"translate":"multiplayer.player.joined","with":["The_Defman"],"color":"yellow"}"#
         );
 
-        let join = Translate::MultiplayerPlayerJoined * vec!["The_Defman"] * Color::Yellow;
+        let join = Text::from(
+            TextComponent::from(Translate::MultiplayerPlayerJoined * vec!["The_Defman"])
+                * Color::Yellow,
+        );
 
         let text_json = serde_json::to_string(&join)?;
 
